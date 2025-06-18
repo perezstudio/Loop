@@ -7,35 +7,36 @@
 
 import SwiftUI
 
-// MARK: - Minimal Enhanced Web Renderer
+// MARK: - Minimal Web Renderer
 
 struct EnhancedWebRenderer: View {
     var urlString: String
     
-    @State private var isLoading = true
-    @State private var errorMessage: String?
+    @State private var isLoading = false
+    @State private var content = "Loading content..."
     
     var body: some View {
         VStack {
+            Text("Rendering: \(urlString)")
+                .font(.headline)
+                .padding()
+            
             if isLoading {
                 ProgressView("Loading...")
-            } else if let errorMessage = errorMessage {
-                Text("Error: \(errorMessage)")
-                    .foregroundColor(.red)
             } else {
-                Text("Content for: \(urlString)")
-                    .padding()
+                ScrollView {
+                    Text(content)
+                        .padding()
+                }
             }
         }
-        .task {
-            await loadContent()
+        .onAppear {
+            simulateLoading()
         }
     }
     
-    private func loadContent() async {
-        await MainActor.run {
-            isLoading = false
-        }
+    private func simulateLoading() {
+        content = "Simple web content for: \(urlString)"
     }
 }
 

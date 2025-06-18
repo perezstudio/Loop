@@ -20,7 +20,12 @@ class PaintEngine {
     
     func paint(_ renderNode: RenderNode, context: RenderContext) {
         // Skip invisible elements
-        guard !renderNode.frame.isEmpty else { return }
+        guard !renderNode.frame.isEmpty else { 
+            print("🚫 Skipping paint - empty frame for node: \(renderNode.domNode.tagName ?? "text")")
+            return 
+        }
+        
+        print("🎨 Painting node: \(renderNode.domNode.tagName ?? "text"), frame: \(renderNode.frame)")
         
         let cgContext = context.cgContext
         
@@ -35,8 +40,10 @@ class PaintEngine {
         
         // Paint content based on node type
         if renderNode.domNode.isTextNode {
+            print("📝 Painting text node: '\(renderNode.domNode.textContent ?? "")'")
             paintText(renderNode, context: context)
         } else {
+            print("📍 Painting element: \(renderNode.domNode.tagName ?? "unknown")")
             paintElement(renderNode, context: context)
         }
         
@@ -58,8 +65,10 @@ class PaintEngine {
         let style = node.computedStyle
         
         if let backgroundColor = style.backgroundColor {
-            context.cgContext.setFillColor(backgroundColor.nativeCGColor)
+            let bgColor = backgroundColor.nativeCGColor
+            context.cgContext.setFillColor(bgColor)
             context.cgContext.fill(node.frame)
+            print("🎨 Painted background for \(node.domNode.tagName ?? "text")")
         }
     }
     
@@ -71,8 +80,10 @@ class PaintEngine {
         
         let style = node.computedStyle
         let fontSize = style.fontSize ?? 16
-        let fontWeight = style.fontWeight ?? .regular
-        let textColor = style.nativeCGColor
+        let fontWeight = style.fontWeight ?? .regular  // Keep as FontWeight, don't convert
+        let textColor = style.color?.nativeCGColor ?? CGColor.black
+        
+        print("🔤 Painting text: '\(text)' at \(node.frame) with color: \(textColor)")
         
         // Create attributed string
         let attributedString = createAttributedString(
@@ -237,7 +248,8 @@ class PaintEngine {
     private func paintUnderline(_ node: RenderNode, context: RenderContext) {
         let cgContext = context.cgContext
         
-        cgContext.setStrokeColor(node.computedStyle.nativeCGColor)
+        let textColor = node.computedStyle.color?.nativeCGColor ?? CGColor(red: 0, green: 0, blue: 1, alpha: 1)
+        cgContext.setStrokeColor(textColor)
         cgContext.setLineWidth(1.0)
         
         let y = node.frame.maxY - 2

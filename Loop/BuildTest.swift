@@ -7,18 +7,10 @@
 
 import SwiftUI
 
-// MARK: - Minimal Build Test
-
 struct BuildTest: View {
     var body: some View {
-        VStack {
-            Text("Build Test - Minimal")
-                .font(.title)
-            
-            Text("This is a minimal test to verify compilation")
-                .padding()
-        }
-        .padding()
+        Text("Build Test - Working")
+            .padding()
     }
 }
 

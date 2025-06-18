@@ -1,6 +1,6 @@
 //
 //  CSSParser.swift
-//  Loop
+//  Loop - Legacy CSS Parser (Pre-WebCore)
 //
 //  Created by Kevin Perez on 6/17/25.
 //
@@ -10,9 +10,9 @@ import SwiftUI
 // Import shared types
 // FontWeight enum is defined in NativeTypes.swift
 
-// MARK: - CSS Structures
+// MARK: - Legacy CSS Structures (Pre-WebCore)
 
-struct CSSStyle {
+struct LegacyStyle {
     var fontSize: CGFloat?
     var fontWeight: FontWeight?
     var color: Color?
@@ -27,17 +27,17 @@ struct CSSStyle {
     }
 }
 
-struct CSSRule {
+struct LegacyRule {
     let selector: String
-    let style: CSSStyle
+    let style: LegacyStyle
 }
 
-// MARK: - CSS Parser
+// MARK: - Legacy CSS Parser
 
-class CSSParser {
+class LegacyParser {
     
-    func parseInlineStyle(_ styleString: String) -> CSSStyle {
-        var style = CSSStyle()
+    func parseInlineStyle(_ styleString: String) -> LegacyStyle {
+        var style = LegacyStyle()
         
         let declarations = styleString.components(separatedBy: ";")
         
@@ -54,8 +54,8 @@ class CSSParser {
         return style
     }
     
-    func parseStylesheet(_ css: String) -> [CSSRule] {
-        var rules: [CSSRule] = []
+    func parseStylesheet(_ css: String) -> [LegacyRule] {
+        var rules: [LegacyRule] = []
         
         // Basic CSS parsing - this is simplified and doesn't handle all CSS syntax
         let rulePattern = #"([^{]+)\s*\{\s*([^}]+)\s*\}"#
@@ -73,7 +73,7 @@ class CSSParser {
                 let declarations = String(css[declarationsRange])
                 
                 let style = parseInlineStyle(declarations)
-                rules.append(CSSRule(selector: selector, style: style))
+                rules.append(LegacyRule(selector: selector, style: style))
             }
         } catch {
             print("CSS parsing error: \(error)")
@@ -82,7 +82,7 @@ class CSSParser {
         return rules
     }
     
-    private func applyProperty(_ property: String, value: String, to style: inout CSSStyle) {
+    private func applyProperty(_ property: String, value: String, to style: inout LegacyStyle) {
         switch property {
         case "font-size":
             style.fontSize = parseFontSize(value)
@@ -245,13 +245,13 @@ class CSSParser {
         }
     }
     
-    private func parseDisplay(_ value: String) -> CSSStyle.DisplayType? {
+    private func parseDisplay(_ value: String) -> LegacyStyle.DisplayType? {
         switch value.lowercased() {
         case "block": return .block
         case "inline": return .inline
         case "inline-block": return .inlineBlock
         case "flex": return .flex
-        case "none": return CSSStyle.DisplayType.none
+        case "none": return LegacyStyle.DisplayType.none
         default: return nil
         }
     }
@@ -277,16 +277,27 @@ class CSSParser {
     }
 }
 
+// MARK: - Backward Compatibility Aliases for DOMNode.swift
+
+// Note: These specific aliases avoid conflicts with WebCore types
+// and are only for legacy DOMNode.swift compatibility
+typealias CSSParser = LegacyParser
+typealias LegacyCSSRule = LegacyRule
+typealias CSSStyle = LegacyStyle
+
+// For files that expect WebCore.Rule, we also provide this alias
+typealias CSSRule = LegacyRule
+
 // MARK: - SwiftUI Extensions
 
 extension View {
-    func applyCSS(_ style: CSSStyle) -> some View {
+    func applyCSS(_ style: LegacyStyle) -> some View {
         self.modifier(CSSStyleModifier(style: style))
     }
 }
 
 struct CSSStyleModifier: ViewModifier {
-    let style: CSSStyle
+    let style: LegacyStyle
     
     func body(content: Content) -> some View {
         var modifiedContent = AnyView(content)

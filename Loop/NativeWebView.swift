@@ -137,8 +137,12 @@ class NativeCanvasView: NSView {
     // MARK: - Loading
     
     func loadURL(_ urlString: String) {
-        guard !isLoading, urlString != currentURL else { return }
+        guard !isLoading, urlString != currentURL else { 
+            print("⚠️ Skipping load - already loading or same URL")
+            return 
+        }
         
+        print("🚀 Starting to load URL: \(urlString)")
         currentURL = urlString
         isLoading = true
         
@@ -146,12 +150,15 @@ class NativeCanvasView: NSView {
         
         Task {
             do {
+                print("🌍 Fetching HTML from network...")
                 let html = try await fetchHTML(from: urlString)
+                print("✅ HTML fetch successful")
                 
                 await MainActor.run {
                     self.loadHTML(html)
                 }
             } catch {
+                print("❌ HTML fetch failed: \(error)")
                 await MainActor.run {
                     self.delegate?.canvasView(self, didFailWithError: error)
                     self.isLoading = false
@@ -161,18 +168,31 @@ class NativeCanvasView: NSView {
     }
     
     private func loadHTML(_ html: String) {
+        print("📝 Loading HTML into rendering engine...")
+        print("📊 HTML length: \(html.count) characters")
+        print("🔍 HTML preview: \(String(html.prefix(200)))...")
+        
         let viewport = CGRect(origin: .zero, size: bounds.size)
+        print("📱 Viewport: \(viewport)")
+        
         renderingEngine.loadHTML(html, viewport: viewport)
+        print("⚙️ HTML loaded into rendering engine")
         
         // Update document view size based on content
         if let contentSize = getContentSize() {
             documentView?.setFrameSize(contentSize)
+            print("📌 Document view size set to: \(contentSize)")
         }
         
+        // Force immediate redraw
+        print("🔄 Forcing document view redraw...")
         documentView?.needsDisplay = true
+        documentView?.display()  // Force immediate redraw
+        print("🔄 Document view redraw completed")
         
         isLoading = false
         delegate?.canvasViewDidFinishLoading(self)
+        print("✅ HTML loading complete")
     }
     
     private func fetchHTML(from urlString: String) async throws -> String {
@@ -282,21 +302,80 @@ class NativeCanvasView: NSView {
 
 class DocumentView: NSView {
     weak var canvasView: NativeCanvasView?
+    private var isDrawing = false
+    
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        print("📝 DocumentView initialized with frame: \(frameRect)")
+        self.wantsLayer = false  // Ensure we use draw(_:) not updateLayer
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        print("📝 DocumentView initialized from coder")
+        self.wantsLayer = false
+    }
     
     override var isFlipped: Bool {
         return true // Use top-left origin like web content
     }
     
+    override var wantsUpdateLayer: Bool {
+        return false  // Change to false to use draw(_:) method
+    }
+    
     override func draw(_ dirtyRect: NSRect) {
-        guard let context = NSGraphicsContext.current?.cgContext,
-              let canvasView = canvasView else { return }
+        // Prevent excessive redraws during the same drawing cycle
+        guard !isDrawing else { 
+            print("⚠️ Skipping draw - already drawing")
+            return 
+        }
+        isDrawing = true
+        defer { isDrawing = false }
         
-        // Clear background
+        guard let context = NSGraphicsContext.current?.cgContext,
+              let canvasView = canvasView else { 
+            print("❌ No context or canvas view in DocumentView.draw")
+            return 
+        }
+        
+        // Always log draws for debugging the white page issue
+        print("🖼️ DocumentView drawing - dirtyRect: \(dirtyRect), bounds: \(bounds)")
+        
+        // Clear background with white
         context.setFillColor(CGColor.white)
         context.fill(bounds)
+        print("⬜ Background cleared with white")
         
         // Render web content
-        _ = canvasView.getRenderingEngine().render(to: context)
+        let renderResult = canvasView.getRenderingEngine().render(to: context)
+        print("🎨 Render result: \(renderResult)")
+        
+        if renderResult {
+            print("✅ Web content rendered successfully")
+        } else {
+            print("⚠️ No web content to render - showing loading message")
+            
+            // Show loading message when no content
+            context.setFillColor(CGColor.black)
+            let loadingText = "Loading web content..."
+            let font = CTFontCreateWithName("Helvetica" as CFString, 24, nil)
+            let attributes: [CFString: Any] = [
+                kCTFontAttributeName: font,
+                kCTForegroundColorAttributeName: CGColor.black
+            ]
+            let attributedString = CFAttributedStringCreate(nil, loadingText as CFString, attributes as CFDictionary)!
+            let line = CTLineCreateWithAttributedString(attributedString)
+            
+            context.textPosition = CGPoint(x: 50, y: bounds.height - 100)
+            CTLineDraw(line, context)
+            print("📝 Loading message drawn")
+        }
+        
+        // Add a small debug indicator to confirm drawing is working
+        context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 0.5))
+        context.fill(CGRect(x: 10, y: 10, width: 50, height: 20))
+        print("🔴 Debug indicator drawn")
     }
     
     override var acceptsFirstResponder: Bool {
