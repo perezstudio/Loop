@@ -1,0 +1,125 @@
+// swift-tools-version: 5.9
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
+import PackageDescription
+
+let package = Package(
+    name: "Loop",
+    platforms: [
+        .macOS(.v13),
+        .iOS(.v16)
+    ],
+    products: [
+        // Core rendering engine
+        .library(
+            name: "LoopEngine",
+            targets: ["LoopEngine"]
+        ),
+        // Browser UI components
+        .library(
+            name: "LoopUI",
+            targets: ["LoopUI"]
+        ),
+        // Networking layer
+        .library(
+            name: "LoopNet",
+            targets: ["LoopNet"]
+        ),
+        // JavaScript integration
+        .library(
+            name: "LoopJS",
+            targets: ["LoopJS"]
+        )
+    ],
+    dependencies: [
+        // No external dependencies - we're building from scratch with native APIs
+    ],
+    targets: [
+        // Core rendering engine
+        .target(
+            name: "LoopEngine",
+            dependencies: [],
+            path: "Loop/Sources/LoopEngine",
+            swiftSettings: [
+                .enableUpcomingFeature("BareSlashRegexLiterals"),
+                .enableExperimentalFeature("StrictConcurrency"),
+                .define("LOOP_ENGINE_PERFORMANCE_LOGGING", .when(configuration: .debug))
+            ],
+            linkerSettings: [
+                .linkedFramework("Metal"),
+                .linkedFramework("MetalKit"),
+                .linkedFramework("CoreText"),
+                .linkedFramework("CoreGraphics"),
+                .linkedFramework("CoreAnimation"),
+                .linkedFramework("Accelerate"),
+                .linkedFramework("simd"),
+                .linkedFramework("OSLog")
+            ]
+        ),
+        
+        // Browser UI components
+        .target(
+            name: "LoopUI",
+            dependencies: ["LoopEngine"],
+            path: "Loop/Sources/LoopUI",
+            swiftSettings: [
+                .enableUpcomingFeature("BareSlashRegexLiterals")
+            ],
+            linkerSettings: [
+                .linkedFramework("SwiftUI"),
+                .linkedFramework("AppKit", .when(platforms: [.macOS])),
+                .linkedFramework("UIKit", .when(platforms: [.iOS]))
+            ]
+        ),
+        
+        // Networking layer
+        .target(
+            name: "LoopNet",
+            dependencies: ["LoopEngine"],
+            path: "Loop/Sources/LoopNet",
+            swiftSettings: [
+                .enableUpcomingFeature("BareSlashRegexLiterals")
+            ],
+            linkerSettings: [
+                .linkedFramework("Network"),
+                .linkedFramework("Security"),
+                .linkedFramework("Compression")
+            ]
+        ),
+        
+        // JavaScript integration
+        .target(
+            name: "LoopJS",
+            dependencies: ["LoopEngine"],
+            path: "Loop/Sources/LoopJS",
+            swiftSettings: [
+                .enableUpcomingFeature("BareSlashRegexLiterals")
+            ],
+            linkerSettings: [
+                .linkedFramework("JavaScriptCore")
+            ]
+        ),
+        
+        // Tests
+        .testTarget(
+            name: "LoopEngineTests",
+            dependencies: ["LoopEngine"],
+            path: "Loop/Tests/LoopEngineTests"
+        ),
+        .testTarget(
+            name: "LoopUITests",
+            dependencies: ["LoopUI"],
+            path: "Loop/Tests/LoopUITests"
+        ),
+        .testTarget(
+            name: "LoopNetTests",
+            dependencies: ["LoopNet"],
+            path: "Loop/Tests/LoopNetTests"
+        ),
+        .testTarget(
+            name: "LoopJSTests",
+            dependencies: ["LoopJS"],
+            path: "Loop/Tests/LoopJSTests"
+        )
+    ]
+)
