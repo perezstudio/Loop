@@ -130,9 +130,20 @@ class WebCorePaintEngine {
         guard let style = renderObject.computedStyle else { return }
         
         let backgroundColor = style.backgroundColor
-        if backgroundColor != WebCore.Color.transparent {
+        
+        // Add a default background for HTML root element to make it visible
+        let effectiveBackgroundColor: WebCore.Color
+        if backgroundColor == WebCore.Color.transparent, 
+           let element = renderObject.element, 
+           element.tagName.lowercased() == "html" {
+            effectiveBackgroundColor = .named("white")  // Default white background for HTML
+        } else {
+            effectiveBackgroundColor = backgroundColor
+        }
+        
+        if effectiveBackgroundColor != WebCore.Color.transparent {
             try backgroundPainter.paintBackground(
-                backgroundColor: backgroundColor,
+                backgroundColor: effectiveBackgroundColor,
                 frame: renderObject.frame,
                 context: context
             )

@@ -228,6 +228,10 @@ class WebCoreEngine: ObservableObject {
     }
     
     private func performLayout() async {
+        print("📐 PerformLayout called - checking render tree...")
+        print("📐 Render tree object count: \(renderTree.getObjectCount())")
+        print("📐 Root object exists: \(renderTree.rootObject != nil)")
+        
         guard let rootRenderObject = renderTree.rootObject else {
             print("⚠️ No render tree available for layout")
             return
@@ -243,6 +247,8 @@ class WebCoreEngine: ObservableObject {
                 enableIncrementalLayout: configuration.enableIncrementalLayout,
                 enableDebugging: configuration.enableLayoutDebugging
             )
+            
+            print("📐 Starting layout with context: \(layoutContext)")
             
             // Perform layout
             try await layoutEngine.layout(rootRenderObject, context: layoutContext)

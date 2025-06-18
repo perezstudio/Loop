@@ -36,11 +36,20 @@ class RenderTree {
         
         // Build from document root
         if let documentElement = document.documentElement {
+            print("🌳 Document element found: \(documentElement.tagName)")
             rootObject = await buildRenderObject(from: documentElement, styleEngine: styleEngine)
+            print("🌳 Root object created: \(rootObject != nil)")
+        } else {
+            print("⚠️ No document element found")
         }
         
         delegate?.renderTreeDidChange(self)
         print("✅ Render tree built with \(getObjectCount()) objects")
+        
+        // Debug: print the tree structure
+        if let root = rootObject {
+            print("🌳 Root object details: \(root.debugDescription)")
+        }
     }
     
     private func buildRenderObject(from element: WebCoreElement, styleEngine: StyleEngine) async -> RenderObject? {
@@ -85,6 +94,7 @@ class RenderTree {
     // MARK: - Tree Management
     
     func clear() {
+        print("🌳 Clearing render tree (had \(getObjectCount()) objects)")
         rootObject = nil
         renderObjectMap.removeAll()
         dirtyObjects.removeAll()

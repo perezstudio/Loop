@@ -140,19 +140,31 @@ class WebCoreLayoutEngine {
         // Calculate final height
         let contentHeight = resolveHeight(style.height, availableHeight: containingBlock.height, fontSize: style.resolvedFontSize()) ?? childrenHeight
         
+        // For root elements (html), ensure minimum height if no explicit height is set
+        let finalContentHeight: CGFloat
+        if let element = renderObject.element, element.tagName.lowercased() == "html" {
+            // Always use at least viewport height for root element
+            finalContentHeight = max(childrenHeight, containingBlock.height)
+            if context.enableDebugging {
+                print("📐 Root element height: children=\(childrenHeight), viewport=\(containingBlock.height), final=\(finalContentHeight)")
+            }
+        } else {
+            finalContentHeight = contentHeight
+        }
+        
         // Set final frame
         renderObject.frame = CGRect(
             x: containingBlock.minX + margins.left,
             y: containingBlock.minY + margins.top,
             width: width,
-            height: contentHeight + padding.top + padding.bottom
+            height: finalContentHeight + padding.top + padding.bottom
         )
         
         renderObject.contentRect = CGRect(
             x: padding.left,
             y: padding.top,
             width: contentWidth,
-            height: contentHeight
+            height: finalContentHeight
         )
         
         if context.enableDebugging {
@@ -240,6 +252,10 @@ class BlockFormattingContext {
         var currentY = contentRect.minY
         let availableWidth = contentRect.width
         
+        if context.enableDebugging {
+            print("📐 Layout children in content rect: \(contentRect)")
+        }
+        
         for child in children {
             guard let childStyle = child.computedStyle else { continue }
             
@@ -253,7 +269,7 @@ class BlockFormattingContext {
                 x: contentRect.minX,
                 y: currentY,
                 width: availableWidth,
-                height: contentRect.maxY - currentY
+                height: max(100, contentRect.maxY - currentY)  // Give reasonable height
             )
             
             // Layout the child
@@ -268,15 +284,70 @@ class BlockFormattingContext {
                     currentY += bottomMargin
                 }
             }
+            
+            if context.enableDebugging {
+                print("📐 Positioned child \(child.tagName) at y=\(currentY)")
+            }
         }
         
-        return currentY - contentRect.minY
+        let totalHeight = max(currentY - contentRect.minY, 100)  // Minimum 100px height
+        
+        if context.enableDebugging {
+            print("📐 Children layout complete, total height: \(totalHeight)")
+        }
+        
+        return totalHeight
     }
     
     private func layoutChild(_ child: RenderObject, in containingBlock: CGRect, context: WebCore.LayoutContext) async throws {
-        // This would delegate to the main layout engine
-        // For now, simplified implementation
-        child.frame = containingBlock
+        // This needs to delegate back to the main layout engine
+        // For now, let's give children some basic layout
+        guard let childStyle = child.computedStyle else {
+            child.frame = CGRect(x: containingBlock.minX, y: containingBlock.minY, width: 0, height: 0)
+            return
+        }
+        
+        // Basic child layout - this is simplified
+        let childWidth = containingBlock.width
+        let childHeight: CGFloat
+        
+        if child.isTextNode {
+            // Estimate text height
+            let fontSize = childStyle.resolvedFontSize()
+            childHeight = fontSize * 1.2
+        } else if let element = child.element {
+            // Different heights for different element types
+            switch element.tagName.lowercased() {
+            case "head":
+                childHeight = 0  // Head is invisible
+            case "body":
+                childHeight = max(200, containingBlock.height * 0.8)  // Body takes most space
+            case "div", "section", "article", "main":
+                childHeight = 100  // Block elements get reasonable height
+            case "p", "h1", "h2", "h3", "h4", "h5", "h6":
+                let fontSize = childStyle.resolvedFontSize()
+                childHeight = fontSize * 2  // Text elements based on font size
+            case "br":
+                childHeight = childStyle.resolvedFontSize()  // Line break
+            case "img":
+                childHeight = 100  // Default image height
+            default:
+                childHeight = 50  // Default for other elements
+            }
+        } else {
+            childHeight = 20  // Fallback
+        }
+        
+        child.frame = CGRect(
+            x: containingBlock.minX,
+            y: containingBlock.minY,
+            width: childWidth,
+            height: childHeight
+        )
+        
+        if context.enableDebugging {
+            print("📐 Child layout: \(child.debugDescription) -> \(child.frame)")
+        }
     }
 }
 

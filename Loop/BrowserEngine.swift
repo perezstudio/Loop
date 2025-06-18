@@ -61,7 +61,8 @@ class BrowserEngine: ObservableObject {
         webCoreConfig.enableJavaScript = true
         webCoreConfig.enableGPUAcceleration = true
         webCoreConfig.enableIncrementalLayout = true
-        webCoreConfig.enablePaintDebugging = false
+        webCoreConfig.enablePaintDebugging = true
+        webCoreConfig.enableLayoutDebugging = true
         webCoreConfig.userAgentString = "Loop Browser 1.0 (WebKit Compatible)"
         
         self.webCoreEngine = WebCoreEngine(configuration: webCoreConfig)
