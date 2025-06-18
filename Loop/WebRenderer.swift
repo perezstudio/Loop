@@ -116,7 +116,7 @@ class HTMLParser {
 
 						var attributes: [String: String] = [:]
 						while !scanner.isAtEnd {
-							scanner.scanCharacters(from: .whitespaces)
+							_ = scanner.scanCharacters(from: .whitespaces)
 							if let key = scanner.scanUpToString("=")?.trimmingCharacters(in: .whitespaces), !key.isEmpty {
 								if scanner.scanString("=") != nil {
 									let value = scanner.scanQuotedString() ?? scanner.scanUpToCharacters(from: .whitespaces) ?? ""
@@ -320,7 +320,7 @@ struct WebRenderer: View {
 	private func printDOMStructure(_ node: Node, indent: Int) {
 		let indentation = String(repeating: "  ", count: indent)
 		switch node.type {
-		case .element(let name, let attributes):
+		case .element(let name, _):
 			print("\(indentation)<\(name)> (children: \(node.children.count))")
 		case .text(let text):
 			let preview = text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(50)

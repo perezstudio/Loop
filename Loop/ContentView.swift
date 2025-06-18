@@ -9,16 +9,15 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-	@Environment(\.modelContext) private var modelContext
-	@Query private var items: [Item]
+    @Environment(\.modelContext) private var modelContext
+    @Query private var items: [Item]
 
-	var body: some View {
-		WebRenderer(urlString: "https://google.com")
-	}
-
+    var body: some View {
+        BrowserView()
+    }
 }
 
 #Preview {
-	ContentView()
-		.modelContainer(for: Item.self, inMemory: true)
+    ContentView()
+        .modelContainer(for: Item.self, inMemory: true)
 }
